@@ -108,7 +108,7 @@ impl Game {
                 x: SCREEN_WIDTH / 2 - BULLET_SIZE / 2,
                 y: 0,
                 vx: 1,
-                vy: 2,
+                vy: 4,
                 is_exist: true,
             },
             blocks: Vec::new(),
@@ -151,8 +151,37 @@ impl Game {
             self.requested_sounds.push("crash.wav");
         }
 
-        if self.frame % 60 == 0 {
+        if is_intersect(
+            self.player.x as f32,
+            self.player.y as f32,
+            (self.player.x + PLAYER_WIDTH) as f32,
+            self.player.y as f32,
+            self.bullet.x as f32,
+            self.bullet.y as f32,
+            (self.bullet.x - self.bullet.vx) as f32,
+            (self.bullet.y - self.bullet.vy) as f32,
+        ) {
+            self.bullet.vy *= -1;
+            self.bullet.y = self.player.y - BULLET_SIZE;
             self.requested_sounds.push("pi.wav");
+        }
+
+        if self.bullet.x < 0 {
+            self.bullet.x = 0;
+            self.bullet.vx *= -1;
+        }
+
+        if self.bullet.x > SCREEN_WIDTH - BULLET_SIZE {
+            self.bullet.x = SCREEN_WIDTH - BULLET_SIZE;
+            self.bullet.vx *= -1;
+        }
+
+        if self.bullet.y < 0 {
+            self.bullet.y = 0;
+            self.bullet.vy *= -1;
+        }
+
+        if self.frame % 60 == 0 {
             self.score += 10;
         }
 
@@ -176,4 +205,28 @@ fn clamp<T: PartialOrd>(min: T, value: T, max: T) -> T {
 
 pub fn is_collide(x1: i32, y1: i32, w1: i32, h1: i32, x2: i32, y2: i32, w2: i32, h2: i32) -> bool {
     return (x1 <= x2 + w2 && x2 <= x1 + w1) && (y1 <= y2 + h2 && y2 <= y1 + h1);
+}
+
+// 線分0-1と線分2-3の交差判定
+pub fn is_intersect(
+    x1: f32,
+    y1: f32,
+    x2: f32,
+    y2: f32,
+    x3: f32,
+    y3: f32,
+    x4: f32,
+    y4: f32,
+) -> bool {
+    let s = (x1 - x2) * (y3 - y1) - (y1 - y2) * (x3 - x1);
+    let t = (x1 - x2) * (y4 - y1) - (y1 - y2) * (x4 - x1);
+    if s * t > 0.0 {
+        return false;
+    }
+    let s = (x3 - x4) * (y1 - y3) - (y3 - y4) * (x1 - x3);
+    let t = (x3 - x4) * (y2 - y3) - (y3 - y4) * (x2 - x3);
+    if s * t > 0.0 {
+        return false;
+    }
+    return true;
 }
