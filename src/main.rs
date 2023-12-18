@@ -156,19 +156,19 @@ fn render(
     // render player
     canvas.set_draw_color(Color::RGB(200, 200, 200));
     canvas.fill_rect(Rect::new(
-        game.player.x as i32,
-        game.player.y as i32,
-        PLAYER_WIDTH,
-        PLAYER_HEIGHT,
+        game.player.x,
+        game.player.y,
+        PLAYER_WIDTH as u32,
+        PLAYER_HEIGHT as u32,
     ))?;
 
     // render bullets
     canvas.set_draw_color(Color::RGB(255, 255, 0));
     canvas.draw_rect(Rect::new(
-        game.bullet.x as i32,
-        game.bullet.y as i32,
-        BULLET_SIZE,
-        BULLET_SIZE,
+        game.bullet.x,
+        game.bullet.y,
+        BULLET_SIZE as u32,
+        BULLET_SIZE as u32,
     ))?;
 
     // render blocks
@@ -181,8 +181,8 @@ fn render(
             };
             canvas.set_draw_color(color);
             canvas.fill_rect(Rect::new(
-                block.x as i32,
-                block.y as i32,
+                block.x,
+                block.y,
                 BLOCK_WIDTH as u32,
                 BLOCK_HEIGHT as u32,
             ))?;
@@ -197,9 +197,9 @@ fn render(
     render_number(
         canvas,
         resources,
-        SCREEN_WIDTH as i32 - 8 * 8,
+        SCREEN_WIDTH - 8 * 8,
         0,
-        format!("{0: >8}", game.score),
+        format!("{0: >8}", game.displaying_score),
     );
 
     canvas.present();
