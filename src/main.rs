@@ -76,7 +76,7 @@ pub fn main() -> Result<(), String> {
                     keycode: Some(Keycode::Space),
                     ..
                 } => {
-                    if game.is_over {
+                    if game.is_over || game.is_clear {
                         game = Game::new();
                     }
                 }
@@ -189,6 +189,11 @@ fn render(
             BULLET_SIZE as u32,
             BULLET_SIZE as u32,
         ))?;
+    }
+
+    if game.is_clear {
+        canvas.set_draw_color(Color::RGBA(255, 255, 0, 128));
+        canvas.fill_rect(Rect::new(0, 0, SCREEN_WIDTH as u32, SCREEN_HEIGHT as u32))?;
     }
 
     if game.is_over {

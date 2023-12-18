@@ -98,6 +98,7 @@ impl Block {
 
 pub struct Game {
     pub rng: StdRng,
+    pub is_clear: bool,
     pub is_over: bool,
     pub frame: i32,
     pub player: Player,
@@ -119,6 +120,7 @@ impl Game {
 
         let mut game = Game {
             rng: rng,
+            is_clear: false,
             is_over: false,
             frame: 0,
             player: Player::new(),
@@ -155,7 +157,7 @@ impl Game {
     }
 
     pub fn update(&mut self, command: Command) {
-        if self.is_over {
+        if self.is_over || self.is_clear {
             return;
         }
 
@@ -214,7 +216,21 @@ impl Game {
             let mut is_intersect_top_bottom = false;
             // let mut speedup_rate = 1.0;
 
-            for block in &mut self.blocks {
+            let begin: i32;
+            let end: i32;
+            let step: i32;
+            if self.bullet.vy > 0 {
+                begin = 0;
+                end = self.blocks.len() as i32;
+                step = 1;
+            } else {
+                begin = self.blocks.len() as i32 - 1;
+                end = -1 as i32;
+                step = -1;
+            }
+            let mut i = begin;
+            while i != end {
+                let block = &mut self.blocks[i as usize];
                 if block.is_exist {
                     // ブロックの上との衝突判定
                     if self.bullet.vy > 0
@@ -255,6 +271,7 @@ impl Game {
 
                     // ブロックの左右との衝突判定
                 }
+                i += step;
             }
 
             if is_intersect_top_bottom {
@@ -270,6 +287,17 @@ impl Game {
                 }
                 self.requested_sounds.push("pi.wav");
             }
+        }
+
+        if self
+            .blocks
+            .iter()
+            .filter(|x| x.is_exist)
+            .collect::<Vec<_>>()
+            .len()
+            == 0
+        {
+            self.is_clear = true;
         }
 
         if self.displaying_score < self.score {
