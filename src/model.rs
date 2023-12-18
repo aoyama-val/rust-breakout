@@ -2,8 +2,8 @@ use rand::prelude::*;
 use std::time;
 
 pub const PLAYER_WIDTH: i32 = 40;
-pub const PLAYER_HEIGHT: i32 = 5;
-pub const BULLET_SIZE: i32 = 5;
+pub const PLAYER_HEIGHT: i32 = 8;
+pub const BULLET_SIZE: i32 = 8;
 pub const BLOCK_WIDTH: i32 = 40;
 pub const BLOCK_HEIGHT: i32 = 10;
 pub const MARGIN_TOP: i32 = 25;
@@ -52,7 +52,7 @@ pub struct Bullet {
     pub y: i32,
     pub vx: i32,
     pub vy: i32,
-    pub should_remove: bool,
+    pub is_exist: bool,
 }
 
 impl Bullet {
@@ -105,11 +105,11 @@ impl Game {
             score: 0,
             displaying_score: 0,
             bullet: Bullet {
-                x: 0,
+                x: SCREEN_WIDTH / 2 - BULLET_SIZE / 2,
                 y: 0,
-                vx: 0,
-                vy: 0,
-                should_remove: false,
+                vx: 1,
+                vy: 2,
+                is_exist: true,
             },
             blocks: Vec::new(),
             requested_sounds: Vec::new(),
@@ -145,6 +145,11 @@ impl Game {
         }
 
         self.bullet.do_move();
+
+        if self.bullet.y >= SCREEN_HEIGHT {
+            self.is_over = true;
+            self.requested_sounds.push("crash.wav");
+        }
 
         if self.frame % 60 == 0 {
             self.requested_sounds.push("pi.wav");

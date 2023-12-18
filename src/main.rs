@@ -134,7 +134,7 @@ fn load_resources<'a>(texture_creator: &'a TextureCreator<WindowContext>) -> Res
         resources.images.insert(path.to_string(), image);
     }
 
-    let sound_paths = ["pi.wav"];
+    let sound_paths = ["crash.wav", "pi.wav"];
     for path in sound_paths {
         let full_path = "resources/sound/".to_string() + path;
         let chunk =
@@ -162,15 +162,6 @@ fn render(
         PLAYER_HEIGHT as u32,
     ))?;
 
-    // render bullets
-    canvas.set_draw_color(Color::RGB(255, 255, 0));
-    canvas.draw_rect(Rect::new(
-        game.bullet.x,
-        game.bullet.y,
-        BULLET_SIZE as u32,
-        BULLET_SIZE as u32,
-    ))?;
-
     // render blocks
     for block in &game.blocks {
         if block.is_exist {
@@ -187,6 +178,17 @@ fn render(
                 BLOCK_HEIGHT as u32,
             ))?;
         }
+    }
+
+    // render bullets
+    if game.bullet.is_exist {
+        canvas.set_draw_color(Color::RGB(255, 255, 255));
+        canvas.fill_rect(Rect::new(
+            game.bullet.x,
+            game.bullet.y,
+            BULLET_SIZE as u32,
+            BULLET_SIZE as u32,
+        ))?;
     }
 
     if game.is_over {
