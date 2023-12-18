@@ -86,14 +86,6 @@ impl Block {
             Color::Green => 100,
         }
     }
-
-    fn get_speedup_rate(&self) -> f32 {
-        match self.color {
-            Color::Red => 1.0,
-            Color::Yellow => 1.0,
-            Color::Green => 1.0,
-        }
-    }
 }
 
 pub struct Game {
@@ -214,8 +206,9 @@ impl Game {
             let bullet_center_x = (self.bullet.x + BULLET_SIZE / 2) as f32;
             let bullet_center_y = (self.bullet.y + BULLET_SIZE / 2) as f32;
             let mut is_intersect_top_bottom = false;
-            // let mut speedup_rate = 1.0;
 
+            // 近いブロックから順に衝突判定させる
+            // 下へ動いているときは上のブロックから、上へ動いているときは下のブロックから判定
             let begin: i32;
             let end: i32;
             let step: i32;
@@ -247,8 +240,8 @@ impl Game {
                     {
                         is_intersect_top_bottom = true;
                         block.is_exist = false;
-                        // speedup_rate = block.get_speedup_rate();
                         self.score += block.get_score();
+                        break;
                     }
                     // ブロックの下との衝突判定
                     if self.bullet.vy < 0
@@ -265,11 +258,11 @@ impl Game {
                     {
                         is_intersect_top_bottom = true;
                         block.is_exist = false;
-                        // speedup_rate = block.get_speedup_rate();
                         self.score += block.get_score();
+                        break;
                     }
 
-                    // ブロックの左右との衝突判定
+                    // ブロックの左右との衝突判定は省略
                 }
                 i += step;
             }
