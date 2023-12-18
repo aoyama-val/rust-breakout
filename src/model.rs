@@ -168,10 +168,20 @@ impl Game {
         }
 
         // プレイヤーとの衝突判定
+        let is_mighty = true; // 無敵モード
+        let player_left;
+        let player_right;
+        if is_mighty {
+            player_left = 0;
+            player_right = SCREEN_WIDTH;
+        } else {
+            player_left = self.player.x;
+            player_right = self.player.x + PLAYER_WIDTH;
+        }
         if is_intersect(
-            self.player.x as f32,
+            player_left as f32,
             self.player.y as f32,
-            (self.player.x + PLAYER_WIDTH) as f32,
+            player_right as f32,
             self.player.y as f32,
             self.bullet.x as f32,
             self.bullet.y as f32,
