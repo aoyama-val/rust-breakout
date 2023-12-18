@@ -4,6 +4,7 @@ use std::time;
 pub const PLAYER_WIDTH: i32 = 40;
 pub const PLAYER_HEIGHT: i32 = 8;
 pub const BULLET_SIZE: i32 = 8;
+pub const BULLET_SPEED_Y_MAX: i32 = 10;
 pub const BLOCK_WIDTH: i32 = 40;
 pub const BLOCK_HEIGHT: i32 = 10;
 pub const MARGIN_TOP: i32 = 25;
@@ -15,7 +16,7 @@ pub const BLOCK_COUNT_PER_ROW: i32 = 10;
 pub const ROW_COUNT_PER_COLOR: i32 = 2;
 pub const SCREEN_WIDTH: i32 =
     MARGIN_LEFT + BLOCK_COUNT_PER_ROW * (BLOCK_WIDTH + PADDING_X) + MARGIN_RIGHT;
-pub const SCREEN_HEIGHT: i32 = 420;
+pub const SCREEN_HEIGHT: i32 = 380;
 
 pub enum Command {
     None,
@@ -53,6 +54,7 @@ pub struct Bullet {
     pub vx: i32,
     pub vy: i32,
     pub is_exist: bool,
+    pub is_no_collision: bool,
 }
 
 impl Bullet {
@@ -74,6 +76,24 @@ pub struct Block {
     pub y: i32,
     pub is_exist: bool,
     pub color: Color,
+}
+
+impl Block {
+    fn get_score(&self) -> i32 {
+        match self.color {
+            Color::Red => 400,
+            Color::Yellow => 200,
+            Color::Green => 100,
+        }
+    }
+
+    fn get_speedup_rate(&self) -> f32 {
+        match self.color {
+            Color::Red => 1.0,
+            Color::Yellow => 1.0,
+            Color::Green => 1.0,
+        }
+    }
 }
 
 pub struct Game {
@@ -110,6 +130,7 @@ impl Game {
                 vx: 1,
                 vy: 4,
                 is_exist: true,
+                is_no_collision: true,
             },
             blocks: Vec::new(),
             requested_sounds: Vec::new(),
@@ -146,11 +167,13 @@ impl Game {
 
         self.bullet.do_move();
 
+        // ゲームオーバー判定
         if self.bullet.y >= SCREEN_HEIGHT {
             self.is_over = true;
             self.requested_sounds.push("crash.wav");
         }
 
+        // プレイヤーとの衝突判定
         if is_intersect(
             self.player.x as f32,
             self.player.y as f32,
@@ -163,30 +186,94 @@ impl Game {
         ) {
             self.bullet.vy *= -1;
             self.bullet.y = self.player.y - BULLET_SIZE;
+            self.bullet.is_no_collision = false;
             self.requested_sounds.push("pi.wav");
         }
 
+        // 左の壁との衝突判定
         if self.bullet.x < 0 {
             self.bullet.x = 0;
             self.bullet.vx *= -1;
         }
 
+        // 右の壁との衝突判定
         if self.bullet.x > SCREEN_WIDTH - BULLET_SIZE {
             self.bullet.x = SCREEN_WIDTH - BULLET_SIZE;
             self.bullet.vx *= -1;
         }
 
+        // 上の壁との衝突判定
         if self.bullet.y < 0 {
             self.bullet.y = 0;
             self.bullet.vy *= -1;
         }
 
-        if self.frame % 60 == 0 {
-            self.score += 10;
+        if !self.bullet.is_no_collision {
+            let bullet_center_x = (self.bullet.x + BULLET_SIZE / 2) as f32;
+            let bullet_center_y = (self.bullet.y + BULLET_SIZE / 2) as f32;
+            let mut is_intersect_top_bottom = false;
+            // let mut speedup_rate = 1.0;
+
+            for block in &mut self.blocks {
+                if block.is_exist {
+                    // ブロックの上との衝突判定
+                    if self.bullet.vy > 0
+                        && is_intersect(
+                            block.x as f32,
+                            block.y as f32,
+                            (block.x + BLOCK_WIDTH) as f32,
+                            block.y as f32,
+                            bullet_center_x,
+                            bullet_center_y,
+                            bullet_center_x - self.bullet.vx as f32,
+                            bullet_center_y - self.bullet.vy as f32,
+                        )
+                    {
+                        is_intersect_top_bottom = true;
+                        block.is_exist = false;
+                        // speedup_rate = block.get_speedup_rate();
+                        self.score += block.get_score();
+                    }
+                    // ブロックの下との衝突判定
+                    if self.bullet.vy < 0
+                        && is_intersect(
+                            block.x as f32,
+                            (block.y + BLOCK_HEIGHT) as f32,
+                            (block.x + BLOCK_WIDTH) as f32,
+                            (block.y + BLOCK_HEIGHT) as f32,
+                            bullet_center_x,
+                            bullet_center_y,
+                            bullet_center_x - self.bullet.vx as f32,
+                            bullet_center_y - self.bullet.vy as f32,
+                        )
+                    {
+                        is_intersect_top_bottom = true;
+                        block.is_exist = false;
+                        // speedup_rate = block.get_speedup_rate();
+                        self.score += block.get_score();
+                    }
+
+                    // ブロックの左右との衝突判定
+                }
+            }
+
+            if is_intersect_top_bottom {
+                self.bullet.vy *= -1;
+
+                // ブロックと衝突するごとにスピードアップ
+                if self.bullet.vy > 0 {
+                    self.bullet.vy =
+                        clamp(-BULLET_SPEED_Y_MAX, self.bullet.vy + 1, BULLET_SPEED_Y_MAX);
+                } else {
+                    self.bullet.vy =
+                        clamp(-BULLET_SPEED_Y_MAX, self.bullet.vy - 1, BULLET_SPEED_Y_MAX);
+                }
+                self.requested_sounds.push("pi.wav");
+            }
         }
 
         if self.displaying_score < self.score {
-            self.displaying_score += 1;
+            self.displaying_score += 10;
         }
 
         self.frame += 1;
@@ -203,11 +290,7 @@ fn clamp<T: PartialOrd>(min: T, value: T, max: T) -> T {
     value
 }
 
-pub fn is_collide(x1: i32, y1: i32, w1: i32, h1: i32, x2: i32, y2: i32, w2: i32, h2: i32) -> bool {
-    return (x1 <= x2 + w2 && x2 <= x1 + w1) && (y1 <= y2 + h2 && y2 <= y1 + h1);
-}
-
-// 線分0-1と線分2-3の交差判定
+// 線分1-2と線分3-4の交差判定
 pub fn is_intersect(
     x1: f32,
     y1: f32,
