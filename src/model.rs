@@ -54,7 +54,6 @@ pub struct Bullet {
     pub vx: i32,
     pub vy: i32,
     pub is_exist: bool,
-    pub is_no_collision: bool,
 }
 
 impl Bullet {
@@ -120,11 +119,10 @@ impl Game {
             displaying_score: 0,
             bullet: Bullet {
                 x: SCREEN_WIDTH / 2 - BULLET_SIZE / 2,
-                y: 0,
+                y: 120,
                 vx: 1,
                 vy: 4,
                 is_exist: true,
-                is_no_collision: true,
             },
             blocks: Vec::new(),
             requested_sounds: Vec::new(),
@@ -190,7 +188,6 @@ impl Game {
         ) {
             self.bullet.vy *= -1;
             self.bullet.y = self.player.y - BULLET_SIZE;
-            self.bullet.is_no_collision = false;
             self.requested_sounds.push("pi.wav");
         }
 
@@ -212,84 +209,80 @@ impl Game {
             self.bullet.vy *= -1;
         }
 
-        if !self.bullet.is_no_collision {
-            let bullet_center_x = (self.bullet.x + BULLET_SIZE / 2) as f32;
-            let bullet_center_y = (self.bullet.y + BULLET_SIZE / 2) as f32;
-            let mut is_intersect_top_bottom = false;
+        let bullet_center_x = (self.bullet.x + BULLET_SIZE / 2) as f32;
+        let bullet_center_y = (self.bullet.y + BULLET_SIZE / 2) as f32;
+        let mut is_intersect_top_bottom = false;
 
-            // 近いブロックから順に衝突判定させる
-            // 下へ動いているときは上のブロックから、上へ動いているときは下のブロックから判定
-            let begin: i32;
-            let end: i32;
-            let step: i32;
+        // 近いブロックから順に衝突判定させる
+        // 下へ動いているときは上のブロックから、上へ動いているときは下のブロックから判定
+        let begin: i32;
+        let end: i32;
+        let step: i32;
+        if self.bullet.vy > 0 {
+            begin = 0;
+            end = self.blocks.len() as i32;
+            step = 1;
+        } else {
+            begin = self.blocks.len() as i32 - 1;
+            end = -1 as i32;
+            step = -1;
+        }
+        let mut i = begin;
+        while i != end {
+            let block = &mut self.blocks[i as usize];
+            if block.is_exist {
+                // ブロックの上との衝突判定
+                if self.bullet.vy > 0
+                    && is_intersect(
+                        block.x as f32,
+                        block.y as f32,
+                        (block.x + BLOCK_WIDTH) as f32,
+                        block.y as f32,
+                        bullet_center_x,
+                        bullet_center_y,
+                        bullet_center_x - self.bullet.vx as f32,
+                        bullet_center_y - self.bullet.vy as f32,
+                    )
+                {
+                    is_intersect_top_bottom = true;
+                    block.is_exist = false;
+                    self.score += block.get_score();
+                    break;
+                }
+                // ブロックの下との衝突判定
+                if self.bullet.vy < 0
+                    && is_intersect(
+                        block.x as f32,
+                        (block.y + BLOCK_HEIGHT) as f32,
+                        (block.x + BLOCK_WIDTH) as f32,
+                        (block.y + BLOCK_HEIGHT) as f32,
+                        bullet_center_x,
+                        bullet_center_y,
+                        bullet_center_x - self.bullet.vx as f32,
+                        bullet_center_y - self.bullet.vy as f32,
+                    )
+                {
+                    is_intersect_top_bottom = true;
+                    block.is_exist = false;
+                    self.score += block.get_score();
+                    break;
+                }
+
+                // ブロックの左右との衝突判定は省略
+            }
+            i += step;
+        }
+
+        if is_intersect_top_bottom {
+            self.bullet.vy *= -1;
+
+            // ブロックと衝突するごとにスピードアップ
             if self.bullet.vy > 0 {
-                begin = 0;
-                end = self.blocks.len() as i32;
-                step = 1;
+                self.bullet.vy = clamp(-BULLET_SPEED_Y_MAX, self.bullet.vy + 1, BULLET_SPEED_Y_MAX);
             } else {
-                begin = self.blocks.len() as i32 - 1;
-                end = -1 as i32;
-                step = -1;
+                self.bullet.vy = clamp(-BULLET_SPEED_Y_MAX, self.bullet.vy - 1, BULLET_SPEED_Y_MAX);
             }
-            let mut i = begin;
-            while i != end {
-                let block = &mut self.blocks[i as usize];
-                if block.is_exist {
-                    // ブロックの上との衝突判定
-                    if self.bullet.vy > 0
-                        && is_intersect(
-                            block.x as f32,
-                            block.y as f32,
-                            (block.x + BLOCK_WIDTH) as f32,
-                            block.y as f32,
-                            bullet_center_x,
-                            bullet_center_y,
-                            bullet_center_x - self.bullet.vx as f32,
-                            bullet_center_y - self.bullet.vy as f32,
-                        )
-                    {
-                        is_intersect_top_bottom = true;
-                        block.is_exist = false;
-                        self.score += block.get_score();
-                        break;
-                    }
-                    // ブロックの下との衝突判定
-                    if self.bullet.vy < 0
-                        && is_intersect(
-                            block.x as f32,
-                            (block.y + BLOCK_HEIGHT) as f32,
-                            (block.x + BLOCK_WIDTH) as f32,
-                            (block.y + BLOCK_HEIGHT) as f32,
-                            bullet_center_x,
-                            bullet_center_y,
-                            bullet_center_x - self.bullet.vx as f32,
-                            bullet_center_y - self.bullet.vy as f32,
-                        )
-                    {
-                        is_intersect_top_bottom = true;
-                        block.is_exist = false;
-                        self.score += block.get_score();
-                        break;
-                    }
-
-                    // ブロックの左右との衝突判定は省略
-                }
-                i += step;
-            }
-
-            if is_intersect_top_bottom {
-                self.bullet.vy *= -1;
-
-                // ブロックと衝突するごとにスピードアップ
-                if self.bullet.vy > 0 {
-                    self.bullet.vy =
-                        clamp(-BULLET_SPEED_Y_MAX, self.bullet.vy + 1, BULLET_SPEED_Y_MAX);
-                } else {
-                    self.bullet.vy =
-                        clamp(-BULLET_SPEED_Y_MAX, self.bullet.vy - 1, BULLET_SPEED_Y_MAX);
-                }
-                self.requested_sounds.push("pi.wav");
-            }
+            self.requested_sounds.push("pi.wav");
         }
 
         if self
