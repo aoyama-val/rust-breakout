@@ -178,10 +178,10 @@ impl Game {
         }
 
         // プレイヤーとの衝突判定
-        let is_mighty = true; // 無敵モード
+        let is_almighty = false; // 無敵モード
         let player_left;
         let player_right;
-        if is_mighty {
+        if is_almighty {
             player_left = 0;
             player_right = SCREEN_WIDTH;
         } else {
@@ -193,10 +193,10 @@ impl Game {
             self.player.y as f32,
             player_right as f32,
             self.player.y as f32,
-            self.bullet.x as f32,
-            self.bullet.y as f32,
-            (self.bullet.x - self.bullet.vx) as f32,
-            (self.bullet.y - self.bullet.vy) as f32,
+            self.bullet.center_x() as f32,
+            self.bullet.center_y() as f32,
+            (self.bullet.center_x() - self.bullet.vx) as f32,
+            (self.bullet.center_y() - self.bullet.vy) as f32,
         ) {
             self.bullet.vy *= -1;
             self.bullet.y = self.player.y - BULLET_SIZE;
@@ -206,9 +206,9 @@ impl Game {
             let centers_distance = (bullet_center - player_center).abs(); // 弾中心とプレイヤー中心の距離
             if PLAYER_WIDTH / 4 <= centers_distance {
                 if bullet_center < player_center {
-                    self.bullet.x -= 3;
+                    self.bullet.vx -= 1;
                 } else {
-                    self.bullet.x += 3;
+                    self.bullet.vx += 1;
                 }
             }
 
@@ -233,8 +233,8 @@ impl Game {
             self.bullet.vy *= -1;
         }
 
-        let bullet_center_x = (self.bullet.x + BULLET_SIZE / 2) as f32;
-        let bullet_center_y = (self.bullet.y + BULLET_SIZE / 2) as f32;
+        let bullet_center_x = self.bullet.center_x() as f32;
+        let bullet_center_y = self.bullet.center_y() as f32;
         let mut is_intersect_top_bottom = false;
 
         // 近いブロックから順に衝突判定させる
@@ -258,9 +258,9 @@ impl Game {
                 // ブロックの上との衝突判定
                 if self.bullet.vy > 0
                     && is_intersect(
-                        block.x as f32,
+                        (block.x - PADDING_X / 2) as f32, // 見た目上隙間があっても衝突判定は隙間無しで行う。PADDING_Xが奇数だと1pxの隙間ができてしまうが今はやむなし
                         block.y as f32,
-                        (block.x + BLOCK_WIDTH) as f32,
+                        (block.x + BLOCK_WIDTH + PADDING_X / 2) as f32,
                         block.y as f32,
                         bullet_center_x,
                         bullet_center_y,
@@ -276,9 +276,9 @@ impl Game {
                 // ブロックの下との衝突判定
                 if self.bullet.vy < 0
                     && is_intersect(
-                        block.x as f32,
+                        (block.x - PADDING_X / 2) as f32,
                         (block.y + BLOCK_HEIGHT) as f32,
-                        (block.x + BLOCK_WIDTH) as f32,
+                        (block.x + BLOCK_WIDTH + PADDING_X / 2) as f32,
                         (block.y + BLOCK_HEIGHT) as f32,
                         bullet_center_x,
                         bullet_center_y,
