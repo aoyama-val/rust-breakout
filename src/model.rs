@@ -45,6 +45,10 @@ impl Player {
             (SCREEN_WIDTH - PLAYER_WIDTH as i32) as i32,
         );
     }
+
+    pub fn center_x(&self) -> i32 {
+        self.x + PLAYER_WIDTH / 2
+    }
 }
 
 #[derive(Clone)]
@@ -60,6 +64,14 @@ impl Bullet {
     pub fn do_move(&mut self) {
         self.x += self.vx;
         self.y += self.vy;
+    }
+
+    pub fn center_x(&self) -> i32 {
+        self.x + BULLET_SIZE / 2
+    }
+
+    pub fn center_y(&self) -> i32 {
+        self.y + BULLET_SIZE / 2
     }
 }
 
@@ -189,8 +201,8 @@ impl Game {
             self.bullet.vy *= -1;
             self.bullet.y = self.player.y - BULLET_SIZE;
             // プレイヤーの端と当たったら角度を少し変える
-            let bullet_center = self.bullet.x + BULLET_SIZE / 2;
-            let player_center = self.player.x + PLAYER_WIDTH / 2;
+            let bullet_center = self.bullet.center_x();
+            let player_center = self.player.center_x();
             let centers_distance = (bullet_center - player_center).abs(); // 弾中心とプレイヤー中心の距離
             if PLAYER_WIDTH / 4 <= centers_distance {
                 if bullet_center < player_center {
