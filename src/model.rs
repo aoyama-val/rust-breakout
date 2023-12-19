@@ -255,41 +255,32 @@ impl Game {
         while i != end {
             let block = &mut self.blocks[i as usize];
             if block.is_exist {
-                // ブロックの上との衝突判定
-                if self.bullet.vy > 0
-                    && is_intersect(
-                        (block.x - PADDING_X / 2) as f32, // 見た目上隙間があっても衝突判定は隙間無しで行う。PADDING_Xが奇数だと1pxの隙間ができてしまうが今はやむなし
-                        block.y as f32,
-                        (block.x + BLOCK_WIDTH + PADDING_X / 2) as f32,
-                        block.y as f32,
-                        bullet_center_x,
-                        bullet_center_y,
-                        bullet_center_x - self.bullet.vx as f32,
-                        bullet_center_y - self.bullet.vy as f32,
-                    )
-                {
-                    is_intersect_top_bottom = true;
-                    block.is_exist = false;
-                    self.score += block.get_score();
-                    break;
+                let block_left =
+                    (block.x - (PADDING_X / 2 + (if PADDING_X % 2 == 1 { 1 } else { 0 })));
+                let block_right = block.x + BLOCK_WIDTH + PADDING_X / 2;
+                let block_y;
+
+                if self.bullet.vy > 0 {
+                    // ブロックの上との衝突判定
+                    block_y = block.y;
+                } else {
+                    // ブロックの下との衝突判定
+                    block_y = block.y + BLOCK_HEIGHT;
                 }
-                // ブロックの下との衝突判定
-                if self.bullet.vy < 0
-                    && is_intersect(
-                        (block.x - PADDING_X / 2) as f32,
-                        (block.y + BLOCK_HEIGHT) as f32,
-                        (block.x + BLOCK_WIDTH + PADDING_X / 2) as f32,
-                        (block.y + BLOCK_HEIGHT) as f32,
-                        bullet_center_x,
-                        bullet_center_y,
-                        bullet_center_x - self.bullet.vx as f32,
-                        bullet_center_y - self.bullet.vy as f32,
-                    )
-                {
+                if is_intersect(
+                    block_left as f32,
+                    block_y as f32,
+                    block_right as f32,
+                    block_y as f32,
+                    bullet_center_x,
+                    bullet_center_y,
+                    bullet_center_x - self.bullet.vx as f32,
+                    bullet_center_y - self.bullet.vy as f32,
+                ) {
                     is_intersect_top_bottom = true;
                     block.is_exist = false;
                     self.score += block.get_score();
-                    break;
+                    break; // 複数のブロックに同時に衝突しないように
                 }
 
                 // ブロックの左右との衝突判定は省略
