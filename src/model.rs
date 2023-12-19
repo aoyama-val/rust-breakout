@@ -188,6 +188,18 @@ impl Game {
         ) {
             self.bullet.vy *= -1;
             self.bullet.y = self.player.y - BULLET_SIZE;
+            // プレイヤーの端と当たったら角度を少し変える
+            let bullet_center = self.bullet.x + BULLET_SIZE / 2;
+            let player_center = self.player.x + PLAYER_WIDTH / 2;
+            let centers_distance = (bullet_center - player_center).abs(); // 弾中心とプレイヤー中心の距離
+            if PLAYER_WIDTH / 4 <= centers_distance {
+                if bullet_center < player_center {
+                    self.bullet.x -= 3;
+                } else {
+                    self.bullet.x += 3;
+                }
+            }
+
             self.requested_sounds.push("pi.wav");
         }
 
@@ -282,6 +294,7 @@ impl Game {
             } else {
                 self.bullet.vy = clamp(-BULLET_SPEED_Y_MAX, self.bullet.vy - 1, BULLET_SPEED_Y_MAX);
             }
+
             self.requested_sounds.push("pi.wav");
         }
 
