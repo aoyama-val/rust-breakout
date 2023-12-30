@@ -236,6 +236,7 @@ impl Game {
         let bullet_center_x = self.bullet.center_x() as f32;
         let bullet_center_y = self.bullet.center_y() as f32;
         let mut is_intersect_top_bottom = false;
+        let mut is_intersect_left_right = false;
 
         // 近いブロックから順に衝突判定させる
         // 下へ動いているときは上のブロックから、上へ動いているときは下のブロックから判定
@@ -256,8 +257,10 @@ impl Game {
             let block = &mut self.blocks[i as usize];
             if block.is_exist {
                 let block_left =
-                    (block.x - (PADDING_X / 2 + (if PADDING_X % 2 == 1 { 1 } else { 0 })));
+                    block.x - (PADDING_X / 2 + (if PADDING_X % 2 == 1 { 1 } else { 0 }));
                 let block_right = block.x + BLOCK_WIDTH + PADDING_X / 2;
+                let block_top = block.y;
+                let block_bottom = block.y + BLOCK_HEIGHT;
                 let block_y;
 
                 if self.bullet.vy > 0 {
@@ -283,14 +286,40 @@ impl Game {
                     break; // 複数のブロックに同時に衝突しないように
                 }
 
-                // ブロックの左右との衝突判定は省略
+                let block_x;
+                if self.bullet.vx > 0 {
+                    // ブロックの左との衝突判定
+                    block_x = block.x;
+                } else {
+                    // ブロックの右との衝突判定
+                    block_x = block.x + BLOCK_WIDTH;
+                }
+                if is_intersect(
+                    block_x as f32,
+                    block_top as f32,
+                    block_x as f32,
+                    block_bottom as f32,
+                    bullet_center_x,
+                    bullet_center_y,
+                    bullet_center_x - self.bullet.vx as f32,
+                    bullet_center_y - self.bullet.vy as f32,
+                ) {
+                    is_intersect_left_right = true;
+                    block.is_exist = false;
+                    self.score += block.get_score();
+                    break;
+                }
             }
             i += step;
         }
 
         if is_intersect_top_bottom {
             self.bullet.vy *= -1;
-
+        }
+        if is_intersect_left_right {
+            self.bullet.vx *= -1;
+        }
+        if is_intersect_top_bottom || is_intersect_left_right {
             // ブロックと衝突するごとにスピードアップ
             if self.bullet.vy > 0 {
                 self.bullet.vy = clamp(-BULLET_SPEED_Y_MAX, self.bullet.vy + 1, BULLET_SPEED_Y_MAX);
